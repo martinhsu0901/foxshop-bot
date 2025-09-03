@@ -7,7 +7,7 @@ from google.oauth2.service_account import Credentials
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "0"))
 ADMIN_ROLE_ID = int(os.getenv("1404509588572606585", "0"))
-GSHEET_ID = os.getenv("e5f0e285efa11d86df46d982923b99dda83ae694")
+GSHEET_ID = os.getenv("ae811853055d5c2d4f3d5c954279458fa7c15a45")
 GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
 if not TOKEN:
@@ -292,4 +292,5 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
 
