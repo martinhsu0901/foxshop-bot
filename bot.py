@@ -1,43 +1,90 @@
-# requirements:
-#   discord.py==2.4.0
-#   aiosqlite==0.20.0
-
-import os, asyncio, math, time, aiosqlite
-import aiohttp
-import discord
+import os, math, time, json, asyncio, aiohttp, discord
 from discord.ext import commands, tasks
 from discord import app_commands
+import gspread
+from google.oauth2.service_account import Credentials
 
-TOKEN = os.getenv("DISCORD_TOKEN")  # 從環境變數讀取
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = int(os.getenv("GUILD_ID", "0"))
+ADMIN_ROLE_ID = int(os.getenv("1404509588572606585", "0"))
+GSHEET_ID = os.getenv("e5f0e285efa11d86df46d982923b99dda83ae694")
+GOOGLE_CREDENTIALS_JSON = os.getenv("{
+  "type": "service_account",
+  "project_id": "foxshop-bot",
+  "private_key_id": "e5f0e285efa11d86df46d982923b99dda83ae694",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC+hi9fnlxpH6Tm\nuUU4eUzRTdlIxTC5s0YDowc336p6TkJVty4R3GECSr2JWXHRf205D3gHOn+K5ABd\nXLYBufSZROvGgugCSu1UJqDmYf3VQWrIxpQVYGypZjywxMFIgaaTmvOdcQThwgYF\n+uaWuCOEAa+S8GBdoIOY87R+Rd4mC6z/ghzPnz+M2dvED98eiyuD1+twR6bMbCKZ\nXT7WhUUzgh2W4WL8P634VhDb7HkI5t1uHgmChztBav5rR8ptjekhBY8eEm1Ii23j\nbpvoAYbdwDfod0LzbZ3hzyj2HONYSS2bPRRBAvVhWrQrCBObGDhMMydXILt9nJO6\nUvJuBCW1AgMBAAECggEAECXKTRXcajJ65O0t7zfkqVaqRE8mLo8Br5w5J+Smi8An\nQiGI342okSupfcMdcO6WYMAtYZt1JN3nJAKQEHxkvTrIquX8aPlVvQybFXuXqmPl\ne4fNFDS8cO0P1sGOSilm51q6LA1gpwutPAOEWKDZrb4A1fjWigjpLmT1VsBwMBQm\nz05pT95z8gHJ+TXWSLkHqCLl7fREmAtXRLWsV64/cY1kHk1kHatIUMbKoJrgWHzT\nvcM2WfA2w6g86LkyXY1T66P6D46Q2fUe4EkEGB8x2/GuLb9YtK1MZ74EH7vPEdqj\ntTbcyOC9sMJa2HxY3mPJEsl/O0FKZe7QkXggylWfTwKBgQDhZ5elxeY5SneEr//B\n6+oCaB5t8ptw8CG8QqZGoxTX0Sr/s/XV6VGebAeTKnnURFLXbjnASXO+LjvgEoGD\naSZtuCdPo8V19qx/QxyfGNBWp+U1x1YaD6hg5FttJiYkvr1WLP/UOtv1awbRGt84\ntAdv5/owmZp6WZRYLF1hgKZyPwKBgQDYYo7VyJZOHRCCramXAfIBfMMM8u+6a6Ex\niq63nUE6BwXmhl+bOG2FGEAL7YY7zpg0+6Fzu56ZIDohdaTtl/LPRQQN9C0xLuQI\nWR48RGfT0a4FIOXeYtwp4mbP2XYS43xsBwsVIJsp1XbdDk6hrCgyk58eY1nLd0I2\nVVprXdmDCwKBgQDge6Ae++HWSuCPKA0KH57VuMYdb9H4/15JtQMONFqMuYceVCbQ\nXGbp5OMCYPomOclbPi6L31tDG56MAUI1EuKvwQh9mzgLzJhswfTeSgMrWli/X3/T\nwqZJoQOgx66TR9ce3QAIaHoph+apGB8ZxMnnXFviTQf5M/+2dLCna03ZVwKBgDG5\nVEFkOsXwf97HsXT2CXq2BMxw9w3LtdsAl22yQU7oVj7HGik9Kk2vaOhUyMftjaR/\nPnat4qAle7Y8po3CoRVoMqpSNiBbOiOA9yW6QnG2eVrMWIZmCVnGoQGaYzur8ueQ\nJsfQGlfeqdXad89HFGWq7qG5CuVqnliF/KU3h8hJAoGAX/1SaafWZLJqsYV/NeJ0\nt3mj29Rr+zPrrHsoRvJw99R7Ne6unJxGmURxjvmDXqpxHyYLc4Slmi5gItvv6ySn\nrcl7qb+woPytBpiePNAM5p+xfpbtychg/El58edlbHceJwkG0lnq+ig+UXii77xk\njTT2B0ZZRBww9CLoDBxDcSQ=\n-----END PRIVATE KEY-----\n",
+  "client_email": "foxshop-bot@foxshop-bot.iam.gserviceaccount.com",
+  "client_id": "104066409980825910737",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/foxshop-bot%40foxshop-bot.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
+")
+
 if not TOKEN:
-    raise SystemExit("請先設定環境變數 DISCORD_TOKEN")
-GUILD_ID = int(os.getenv("GUILD_ID", "0"))   # 可選：限制到特定伺服器
-ADMIN_ROLE_ID = int(os.getenv(1404509588572606585, "0"))   # 可選：只有管理角色可用管理指令
+    raise SystemExit("請設定環境變數 DISCORD_TOKEN")
+if not GSHEET_ID or not GOOGLE_CREDENTIALS_JSON:
+    raise SystemExit("請設定 GSHEET_ID 與 GOOGLE_CREDENTIALS_JSON")
 
-DB_PATH = os.getenv("DB_PATH", "/data/coupons.db")
+# ---- Google Sheets 連線 ----
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+creds = Credentials.from_service_account_info(json.loads(GOOGLE_CREDENTIALS_JSON), scopes=SCOPES)
+gc = gspread.authorize(creds)
+sh = gc.open_by_key(GSHEET_ID)
+
+def ensure_worksheets():
+    names = [ws.title for ws in sh.worksheets()]
+    if "meta" not in names:
+        sh.add_worksheet("meta", rows=100, cols=3)
+        sh.worksheet("meta").append_row(["key","val"])
+    if "coupons" not in names:
+        sh.add_worksheet("coupons", rows=1000, cols=4)
+        sh.worksheet("coupons").append_row(["code","creator","active","created_at"])
+    if "redemptions" not in names:
+        sh.add_worksheet("redemptions", rows=5000, cols=4)
+        sh.worksheet("redemptions").append_row(["user_id","code","channel_id","ts"])
+
+ensure_worksheets()
+ws_meta = sh.worksheet("meta")
+ws_coupons = sh.worksheet("coupons")
+ws_red = sh.worksheet("redemptions")
+
+# ---- meta 存取 ----
+def meta_get(key, default=None):
+    try:
+        cell = ws_meta.find(key)
+        return ws_meta.cell(cell.row, 2).value
+    except gspread.exceptions.CellNotFound:
+        return default
+
+def meta_set(key, val):
+    try:
+        cell = ws_meta.find(key)
+        ws_meta.update_cell(cell.row, 2, str(val))
+    except gspread.exceptions.CellNotFound:
+        ws_meta.append_row([key, str(val)])
+
+# ---- 狀態（從 meta 還原）----
+state = {
+    "price_channel_id": int(meta_get("price_channel_id", "0") or 0),
+    "price_message_id": int(meta_get("price_message_id", "0") or 0),
+    "rmb": float(meta_get("rmb", "313") or 313),
+    "fx": float(meta_get("fx", "4.30") or 4.30),
+    "fee_pct": float(meta_get("fee_pct", "1.5") or 1.5),
+    "logo_url": meta_get("logo_url", "") or "",
+}
 
 INTENTS = discord.Intents.default()
 INTENTS.message_content = False
 bot = commands.Bot(command_prefix="!", intents=INTENTS)
 
-# ---- 狀態變數（會存 DB）----
-state = {
-    "price_channel_id": None,
-    "price_message_id": None,
-    "rmb": 313.0,
-    "fx": 4.3,
-    "fee_pct": 1.5,
-    "logo_url": "https://i.imgur.com/3O7H8xP.png",  # 先放一個可替換的網址
-}
-
-# ---- 公式：依你規則計價 ----
+# ---- 價格公式 ----
 def calc_price(rmb: float, fx: float, fee_pct: float = 1.5) -> int:
-    cost = rmb * fx * (1 + fee_pct/100)  # 成本（含手續）
-    cost_up10 = math.ceil(cost / 10.0) * 10  # 無條件進位到十位
-    if cost_up10 <= 1430:
-        return int(cost_up10 + 80)
-    else:
-        return int(cost_up10 + 90)
+    cost = rmb * fx * (1 + fee_pct/100)
+    cost_up10 = math.ceil(cost / 10.0) * 10
+    return int(cost_up10 + (80 if cost_up10 <= 1430 else 90))
 
 # ---- 嵌入卡片 ----
 def build_embed():
@@ -51,65 +98,45 @@ def build_embed():
     e.add_field(name="匯率", value=f"{state['fx']:.2f}", inline=True)
     e.add_field(name="手續", value=f"{state['fee_pct']}%", inline=True)
     e.add_field(name="💰 售價 (NTD)", value=f"**NT$ {price}**", inline=False)
-    if state.get("logo_url"):
+    if state["logo_url"]:
         e.set_thumbnail(url=state["logo_url"])
     e.set_footer(text="Fox Shop · 自動更新看板")
     e.timestamp = discord.utils.utcnow()
     return e
 
-# ---- DB helpers ----
-async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS meta(
-            key TEXT PRIMARY KEY, val TEXT
-        )""")
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS coupons(
-            code TEXT PRIMARY KEY,
-            creator TEXT,
-            active INTEGER DEFAULT 1,
-            created_at INTEGER
-        )""")
-        await db.execute("""
-        CREATE TABLE IF NOT EXISTS redemptions(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            code TEXT,
-            channel_id INTEGER,
-            ts INTEGER
-        )""")
-        await db.commit()
+# ---- 匯率自動更新 ----
+FX_URL = "https://api.exchangerate.host/convert?from=CNY&to=TWD"
 
-        # 載入 meta 到 state
-        async with db.execute("SELECT key,val FROM meta") as cur:
-            async for k,v in cur:
-                if k in state:
-                    # 型別處理
-                    if k in ("price_channel_id","price_message_id"):
-                        state[k] = int(v)
-                    elif k in ("rmb","fx","fee_pct"):
-                        state[k] = float(v)
-                    else:
-                        state[k] = v
+async def fetch_fx_2dp():
+    async with aiohttp.ClientSession() as sess:
+        async with sess.get(FX_URL, timeout=10) as r:
+            data = await r.json()
+            rate = float(data.get("result", 0))
+            return round(rate, 2)
 
-async def save_meta(key, val):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("INSERT INTO meta(key,val) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET val=excluded.val", (key, str(val)))
-        await db.commit()
+@tasks.loop(minutes=10)
+async def refresh_fx_loop():
+    try:
+        fx = await fetch_fx_2dp()
+        if fx > 0 and fx != state["fx"]:
+            state["fx"] = fx
+            meta_set("fx", fx)
+            print("[FX] updated:", fx)
+    except Exception as e:
+        print("fx error:", e)
 
-# ---- 背景任務：每分鐘更新 ----
-async defp(seconds=60)
+# ---- 每分鐘更新看板 ----
+@tasks.loop(seconds=60)
 async def update_price_message():
     try:
         ch_id = state.get("price_channel_id")
-        msg_id = state.get("price_message_id")
         if not ch_id:
             return
         channel = bot.get_channel(ch_id)
         if not channel:
             return
         embed = build_embed()
+        msg_id = state.get("price_message_id")
         if msg_id:
             try:
                 msg = await channel.fetch_message(msg_id)
@@ -117,218 +144,164 @@ async def update_price_message():
             except discord.NotFound:
                 m = await channel.send(embed=embed)
                 state["price_message_id"] = m.id
-                await save_meta("price_message_id", m.id)
+                meta_set("price_message_id", m.id)
         else:
             m = await channel.send(embed=embed)
             state["price_message_id"] = m.id
-            await save_meta("price_message_id", m.id)
+            meta_set("price_message_id", m.id)
     except Exception as e:
         print("update error:", e)
 
-# ---- 權限檢查（可選）----
-def is_admin_interaction(inter: discord.Interaction) -> bool:
+# ---- 權限判斷 ----
+def is_admin_inter(inter: discord.Interaction) -> bool:
     if ADMIN_ROLE_ID:
         return any(r.id == ADMIN_ROLE_ID for r in inter.user.roles) if isinstance(inter.user, discord.Member) else False
     return inter.user.guild_permissions.manage_guild if isinstance(inter.user, discord.Member) else False
 
-# ---- 管理指令 ----
+# ---- Admin 群組 ----
 class Admin(app_commands.Group):
     def __init__(self):
         super().__init__(name="admin", description="管理指令")
 
-    @app_commands.command(name="bind_price_channel", description="將目前頻道設為價格看板")
+    @app_commands.command(name="bind_price_channel", description="本頻道設為價格看板")
     async def bind_price_channel(self, inter: discord.Interaction):
-        if not is_admin_interaction(inter):
-            return await inter.response.send_message("沒有權限。", ephemeral=True)
+        if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
         state["price_channel_id"] = inter.channel.id
-        await save_meta("price_channel_id", inter.channel.id)
-        state["price_message_id"] = None
-        await save_meta("price_message_id", "")
+        state["price_message_id"] = 0
+        meta_set("price_channel_id", inter.channel.id)
+        meta_set("price_message_id", 0)
         await inter.response.send_message("已綁定本頻道為價格看板。", ephemeral=True)
 
     @app_commands.command(name="set_price", description="設定人民幣單價（6825VP）")
-    @app_commands.describe(rmb="人民幣數值，例如 313")
     async def set_price(self, inter: discord.Interaction, rmb: float):
-        if not is_admin_interaction(inter):
-            return await inter.response.send_message("沒有權限。", ephemeral=True)
+        if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
         state["rmb"] = rmb
-        await save_meta("rmb", rmb)
+        meta_set("rmb", rmb)
         await inter.response.send_message(f"已設定 RMB = {rmb:.0f}", ephemeral=True)
 
-    @app_commands.command(name="set_fx", description="設定匯率（TWD/RMB）")
-    @app_commands.describe(rate="例如 4.30")
+    @app_commands.command(name="set_fx", description="手動設定匯率（TWD/RMB）")
     async def set_fx(self, inter: discord.Interaction, rate: float):
-        if not is_admin_interaction(inter):
-            return await inter.response.send_message("沒有權限。", ephemeral=True)
+        if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
         state["fx"] = rate
-        await save_meta("fx", rate)
-        await inter.response.send_message(f"已設定 匯率 = {rate:.4g}", ephemeral=True)
+        meta_set("fx", rate)
+        await inter.response.send_message(f"已設定 匯率 = {rate:.2f}", ephemeral=True)
 
-    @app_commands.command(name="set_logo", description="設定嵌入卡片頭貼 URL")
+    @app_commands.command(name="set_logo", description="設定看板縮圖 URL")
     async def set_logo(self, inter: discord.Interaction, url: str):
-        if not is_admin_interaction(inter):
-            return await inter.response.send_message("沒有權限。", ephemeral=True)
+        if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
         state["logo_url"] = url
-        await save_meta("logo_url", url)
+        meta_set("logo_url", url)
         await inter.response.send_message("已更新頭貼 URL。", ephemeral=True)
 
 bot.tree.add_command(Admin())
 
-# ---- 優惠碼：上架/下架/列表 ----
+# ---- 優惠碼：上架/下架/列表/統計 ----
 @app_commands.command(name="coupon_add", description="上架優惠碼（必須以 CHAMPION 結尾）")
-@app_commands.describe(code="創作者碼，例如 AMY2025CHAMPION", creator="創作者識別名")
 async def coupon_add(inter: discord.Interaction, code: str, creator: str):
-    if not is_admin_interaction(inter):
-        return await inter.response.send_message("沒有權限。", ephemeral=True)
+    if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
     code_up = code.strip().upper()
     if not code_up.endswith("CHAMPION"):
         return await inter.response.send_message("優惠碼必須以 CHAMPION 結尾。", ephemeral=True)
-    async with aiosqlite.connect(DB_PATH) as db:
-        try:
-            await db.execute("INSERT INTO coupons(code,creator,active,created_at) VALUES(?,?,1,?)",
-                             (code_up, creator, int(time.time())))
-            await db.commit()
-        except aiosqlite.IntegrityError:
-            return await inter.response.send_message("此優惠碼已存在。", ephemeral=True)
-    await inter.response.send_message(f"已上架優惠碼 **{code_up}**（創作者：{creator}）", ephemeral=True)
+    rows = ws_coupons.col_values(1)  # code 欄
+    if code_up in rows:
+        return await inter.response.send_message("此優惠碼已存在。", ephemeral=True)
+    ws_coupons.append_row([code_up, creator, "1", str(int(time.time()))])
+    await inter.response.send_message(f"已上架 **{code_up}**（創作者：{creator}）", ephemeral=True)
 
 @app_commands.command(name="coupon_remove", description="下架優惠碼")
 async def coupon_remove(inter: discord.Interaction, code: str):
-    if not is_admin_interaction(inter):
-        return await inter.response.send_message("沒有權限。", ephemeral=True)
+    if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
     code_up = code.strip().upper()
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("UPDATE coupons SET active=0 WHERE code=?", (code_up,))
-        await db.commit()
-    await inter.response.send_message(f"已下架 **{code_up}**", ephemeral=True)
+    try:
+        cell = ws_coupons.find(code_up)
+        ws_coupons.update_cell(cell.row, 3, "0")  # active=0
+        await inter.response.send_message(f"已下架 **{code_up}**", ephemeral=True)
+    except gspread.exceptions.CellNotFound:
+        await inter.response.send_message("找不到此優惠碼。", ephemeral=True)
 
-@app_commands.command(name="coupon_list", description="列出有效優惠碼（前50）")
+@app_commands.command(name="coupon_list", description="列出最近的優惠碼（前50）")
 async def coupon_list(inter: discord.Interaction):
-    if not is_admin_interaction(inter):
-        return await inter.response.send_message("沒有權限。", ephemeral=True)
-    rows = []
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT code,creator,active FROM coupons ORDER BY created_at DESC LIMIT 50") as cur:
-            async for code, creator, active in cur:
-                status = "啟用" if active else "關閉"
-                rows.append(f"- {code}（{creator}，{status}）")
-    txt = "\n".join(rows) if rows else "（無）"
-    await inter.response.send_message(txt, ephemeral=True)
+    if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
+    vals = ws_coupons.get_all_values()[1:][:50]
+    lines = []
+    for code, creator, active, created_at in vals:
+        status = "啟用" if active=="1" else "關閉"
+        lines.append(f"- {code}（{creator}，{status}）")
+    await inter.response.send_message("\n".join(lines) if lines else "（無）", ephemeral=True)
 
-bot.tree.add_command(coupon_add)
-bot.tree.add_command(coupon_remove)
-bot.tree.add_command(coupon_list)
+@app_commands.command(name="coupon_stats", description="各創作者兌換數")
+async def coupon_stats(inter: discord.Interaction):
+    if not is_admin_inter(inter): return await inter.response.send_message("沒有權限。", ephemeral=True)
+    # 讀全表做彙總
+    coupons = {row[0]: row[1] for row in ws_coupons.get_all_values()[1:]}  # code->creator
+    reds = ws_red.get_all_values()[1:]
+    cnt = {}
+    for _, code, _, _ in reds:
+        creator = coupons.get(code, "未知")
+        cnt[creator] = cnt.get(creator, 0) + 1
+    lines = [f"- {k}: {v}" for k,v in sorted(cnt.items(), key=lambda x:-x[1])] or ["（尚無兌換）"]
+    await inter.response.send_message("\n".join(lines), ephemeral=True)
 
-# ---- 兌換：/redeem <code> ----
+# ---- 兌換流程 ----
 class ConfirmView(discord.ui.View):
     def __init__(self, code_up: str):
         super().__init__(timeout=60)
         self.code_up = code_up
-        self.result = None
-
+        self.ok = None
     @discord.ui.button(label="✅ 我已開單，確認兌換", style=discord.ButtonStyle.success)
     async def yes(self, inter: discord.Interaction, button: discord.ui.Button):
-        self.result = True
-        self.stop()
-        await inter.response.defer()
-
+        self.ok = True; await inter.response.defer(); self.stop()
     @discord.ui.button(label="取消", style=discord.ButtonStyle.secondary)
     async def no(self, inter: discord.Interaction, button: discord.ui.Button):
-        self.result = False
-        self.stop()
-        await inter.response.defer()
+        self.ok = False; await inter.response.defer(); self.stop()
 
-@app_commands.command(name="redeem", description="兌換 20 元優惠碼（僅限 CHAMPION 活動，每人一次）")
+@app_commands.command(name="redeem", description="兌換 20 元優惠碼（CHAMPION 活動，每人一次）")
 async def redeem(inter: discord.Interaction, code: str):
-    # 只能在 ticket 內使用：這裡用簡單規則（頻道名含 ticket / 單）
     ch_name = inter.channel.name.lower() if isinstance(inter.channel, discord.TextChannel) else ""
     if "ticket" not in ch_name and "單" not in ch_name:
         return await inter.response.send_message("請在你的工單／ticket 頻道內兌換。", ephemeral=True)
 
     code_up = code.strip().upper()
+    # 檢查是否存在且啟用
+    try:
+        cell = ws_coupons.find(code_up)
+        row = ws_coupons.row_values(cell.row)
+        active = row[2] == "1"
+        if not active:
+            return await inter.response.send_message("此優惠碼已關閉。", ephemeral=True)
+    except gspread.exceptions.CellNotFound:
+        return await inter.response.send_message("優惠碼不存在。", ephemeral=True)
 
-    # 檢查優惠碼存在且啟用
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute("SELECT active FROM coupons WHERE code=?", (code_up,)) as cur:
-            row = await cur.fetchone()
-            if not row:
-                return await inter.response.send_message("優惠碼不存在。", ephemeral=True)
-            if row[0] != 1:
-                return await inter.response.send_message("此優惠碼已關閉。", ephemeral=True)
+    # 是否已兌換過任何 *CHAMPION 結尾*
+    reds = ws_red.get_all_values()[1:]
+    for uid, c, _, _ in reds:
+        if int(uid) == inter.user.id and c.endswith("CHAMPION"):
+            return await inter.response.send_message("你已兌換過本活動優惠碼，無法重複兌換。", ephemeral=True)
 
-        # 檢查此人是否已兌換過任何 CHAMPION 結尾優惠碼
-        async with db.execute("""
-            SELECT COUNT(*) FROM redemptions
-             WHERE user_id=? AND code LIKE '%CHAMPION'
-        """, (inter.user.id,)) as cur2:
-            cnt = (await cur2.fetchone())[0]
-            if cnt > 0:
-                return await inter.response.send_message("你已兌換過本活動優惠碼，無法重複兌換。", ephemeral=True)
-
-    # 顯示警語＋按鈕確認
     warn = ("**請確認：** 若要在購買時使用此優惠碼，請確保你已經開單，並在該 ticket 內輸入本優惠碼。\n"
             "若在其他地方兌換則不算數；且兌換後**不得重複兌換本活動優惠碼**。\n\n"
             f"要以此優惠碼 **{code_up}** 完成兌換嗎？")
     view = ConfirmView(code_up)
     await inter.response.send_message(warn, view=view, ephemeral=True)
     await view.wait()
-    if view.result is not True:
-        return  # 取消或逾時
+    if view.ok is not True: return
 
-    # 寫入兌換紀錄
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("INSERT INTO redemptions(user_id, code, channel_id, ts) VALUES(?,?,?,?)",
-                         (inter.user.id, code_up, inter.channel.id, int(time.time())))
-        await db.commit()
-
-    # 公開回覆在 ticket 讓大家看得到
-    await inter.followup.send(
-        f"🎫 <@{inter.user.id}> 已成功兌換優惠碼 **{code_up}**（折抵 $20）",
-        ephemeral=False
-    )
-
-bot.tree.add_command(redeem)
+    ws_red.append_row([str(inter.user.id), code_up, str(inter.channel.id), str(int(time.time()))])
+    await inter.followup.send(f"🎫 <@{inter.user.id}> 已成功兌換優惠碼 **{code_up}**（折抵 $20）", ephemeral=False)
 
 # ---- 啟動 ----
 @bot.event
 async def on_ready():
-    await init_db()
     try:
         if GUILD_ID:
-            guild = bot.get_guild(GUILD_ID)
-            await bot.tree.sync(guild=guild)
+            await bot.tree.sync(guild=bot.get_guild(GUILD_ID))
         else:
             await bot.tree.sync()
     except Exception as e:
         print("sync error:", e)
-    update_price_message.start()   # 每分鐘更新價格看板
-    refresh_fx_loop.start()        # 每10分鐘抓匯率
+    update_price_message.start()
+    refresh_fx_loop.start()
     print(f"Logged in as {bot.user}")
 
-
-FX_URL = "https://api.exchangerate.host/convert?from=CNY&to=TWD"
-
-async def fetch_fx_2dp():
-    """抓 CNY→TWD 匯率並四捨五入到小數 2 位。"""
-    async with aiohttp.ClientSession() as sess:
-        async with sess.get(FX_URL, timeout=10) as r:
-            data = await r.json()
-            rate = float(data.get("result", 0))  # e.g. 4.312345
-            return round(rate, 2)
-
-@tasks.loop(minutes=10)
-async def refresh_fx_loop():
-    try:
-        fx = await fetch_fx_2dp()
-        if fx > 0:
-            state["fx"] = fx
-            await save_meta("fx", fx)
-            print("[FX] updated:", fx)
-    except Exception as e:
-        print("fx error:", e)
-
-
 if __name__ == "__main__":
-    if not TOKEN:
-        raise SystemExit("請設好 DISCORD_TOKEN 環境變數")
     bot.run(TOKEN)
