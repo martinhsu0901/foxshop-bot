@@ -4,7 +4,6 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-    plan: starter    # 可用 free；要 Persistent Disk 建議 starter
     envVars:
       - key: DISCORD_TOKEN
         sync: false   # 之後在 Render 介面輸入
@@ -14,7 +13,3 @@ services:
         value: "（可留空或填管理身分組ID）"
       - key: PYTHONUNBUFFERED
         value: "1"
-    disk:
-      name: coupons-disk
-      mountPath: /data
-      sizeGB: 1
