@@ -8,20 +8,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("GUILD_ID", "0"))
 ADMIN_ROLE_ID = int(os.getenv("1404509588572606585", "0"))
 GSHEET_ID = os.getenv("e5f0e285efa11d86df46d982923b99dda83ae694")
-GOOGLE_CREDENTIALS_JSON = os.getenv("{
-  "type": "service_account",
-  "project_id": "foxshop-bot",
-  "private_key_id": "e5f0e285efa11d86df46d982923b99dda83ae694",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC+hi9fnlxpH6Tm\nuUU4eUzRTdlIxTC5s0YDowc336p6TkJVty4R3GECSr2JWXHRf205D3gHOn+K5ABd\nXLYBufSZROvGgugCSu1UJqDmYf3VQWrIxpQVYGypZjywxMFIgaaTmvOdcQThwgYF\n+uaWuCOEAa+S8GBdoIOY87R+Rd4mC6z/ghzPnz+M2dvED98eiyuD1+twR6bMbCKZ\nXT7WhUUzgh2W4WL8P634VhDb7HkI5t1uHgmChztBav5rR8ptjekhBY8eEm1Ii23j\nbpvoAYbdwDfod0LzbZ3hzyj2HONYSS2bPRRBAvVhWrQrCBObGDhMMydXILt9nJO6\nUvJuBCW1AgMBAAECggEAECXKTRXcajJ65O0t7zfkqVaqRE8mLo8Br5w5J+Smi8An\nQiGI342okSupfcMdcO6WYMAtYZt1JN3nJAKQEHxkvTrIquX8aPlVvQybFXuXqmPl\ne4fNFDS8cO0P1sGOSilm51q6LA1gpwutPAOEWKDZrb4A1fjWigjpLmT1VsBwMBQm\nz05pT95z8gHJ+TXWSLkHqCLl7fREmAtXRLWsV64/cY1kHk1kHatIUMbKoJrgWHzT\nvcM2WfA2w6g86LkyXY1T66P6D46Q2fUe4EkEGB8x2/GuLb9YtK1MZ74EH7vPEdqj\ntTbcyOC9sMJa2HxY3mPJEsl/O0FKZe7QkXggylWfTwKBgQDhZ5elxeY5SneEr//B\n6+oCaB5t8ptw8CG8QqZGoxTX0Sr/s/XV6VGebAeTKnnURFLXbjnASXO+LjvgEoGD\naSZtuCdPo8V19qx/QxyfGNBWp+U1x1YaD6hg5FttJiYkvr1WLP/UOtv1awbRGt84\ntAdv5/owmZp6WZRYLF1hgKZyPwKBgQDYYo7VyJZOHRCCramXAfIBfMMM8u+6a6Ex\niq63nUE6BwXmhl+bOG2FGEAL7YY7zpg0+6Fzu56ZIDohdaTtl/LPRQQN9C0xLuQI\nWR48RGfT0a4FIOXeYtwp4mbP2XYS43xsBwsVIJsp1XbdDk6hrCgyk58eY1nLd0I2\nVVprXdmDCwKBgQDge6Ae++HWSuCPKA0KH57VuMYdb9H4/15JtQMONFqMuYceVCbQ\nXGbp5OMCYPomOclbPi6L31tDG56MAUI1EuKvwQh9mzgLzJhswfTeSgMrWli/X3/T\nwqZJoQOgx66TR9ce3QAIaHoph+apGB8ZxMnnXFviTQf5M/+2dLCna03ZVwKBgDG5\nVEFkOsXwf97HsXT2CXq2BMxw9w3LtdsAl22yQU7oVj7HGik9Kk2vaOhUyMftjaR/\nPnat4qAle7Y8po3CoRVoMqpSNiBbOiOA9yW6QnG2eVrMWIZmCVnGoQGaYzur8ueQ\nJsfQGlfeqdXad89HFGWq7qG5CuVqnliF/KU3h8hJAoGAX/1SaafWZLJqsYV/NeJ0\nt3mj29Rr+zPrrHsoRvJw99R7Ne6unJxGmURxjvmDXqpxHyYLc4Slmi5gItvv6ySn\nrcl7qb+woPytBpiePNAM5p+xfpbtychg/El58edlbHceJwkG0lnq+ig+UXii77xk\njTT2B0ZZRBww9CLoDBxDcSQ=\n-----END PRIVATE KEY-----\n",
-  "client_email": "foxshop-bot@foxshop-bot.iam.gserviceaccount.com",
-  "client_id": "104066409980825910737",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/foxshop-bot%40foxshop-bot.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
-")
+GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
 if not TOKEN:
     raise SystemExit("請設定環境變數 DISCORD_TOKEN")
@@ -305,3 +292,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     bot.run(TOKEN)
+
